@@ -1,0 +1,372 @@
+<style>
+    #customers td, #customers th {
+    border: 1px solid #ddd;
+    padding: 8px;
+  }
+  
+  #customers tr:nth-child(even){background-color: #f2f2f2;}
+  
+  #customers tr:hover {background-color: #ddd;}
+  
+  #customers th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #04AA6D;
+    color: white;
+  }
+  .ui-widget {
+    width: 25%;
+    float: left;
+}
+
+.ui-widget select {
+    height: 30px;
+    width: 180px;
+}
+.g-type, .c-type{
+    position: relative;
+    bottom:3px;
+}
+.ui-widget:nth-child(2) {
+    position: relative;
+    bottom: 3px;
+}
+</style>
+<script src="js/stocks.js"></script>
+<!-- <script src="js/index.js"></script> -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/free-jqgrid/4.15.5/jquery.jqgrid.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/free-jqgrid/4.15.5/css/ui.jqgrid.min.css"><div id="showData"></div>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">    
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.5.1/chart.min.js" integrity="sha512-Wt1bJGtlnMtGP0dqNFH1xlkLBNpEodaiQ8ZN5JLA5wpc1sUlk/O5uuOMNgvzddzkpvZ9GLyYNa8w2s7rqiTk5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<div class="filter-section">
+    <div class="ui-widget" style="width: 25%;">
+        <label for="tags">Choose a stock: </label>
+        <input id="tags" onchange="arrayToTable(this)" style="width: 175px;">
+      </div>
+      <div class="ui-widget">
+        <label for="tags">Select View: </label>
+        <select id="View" onchange="selectView(this)">
+            <option>Tab View</option>
+            <option>Graph View</option>
+        </select>
+      </div>
+      <div class="ui-widget g-type" style="display: none;">
+      <label for="tags">Graph Type: </label>
+      <select id="GraphType" onchange="ChangeGraphType()">
+          <option>line</option>
+          <option>bar</option>
+        </select>
+    </div>
+
+    <div class="ui-widget c-type" style="display: none;">
+        <label for="tags">Graph On: </label>
+        <select id="GraphTypeBase" onchange="ChangeGraphTypeWith()">
+            <option>Change</option>
+            <option>Open</option>
+            <option>Close</option>
+            <option>High</option>
+            <option>Low</option>
+            <option>Volume</option>
+          </select>
+      </div>
+</div>
+<div class="grid-sec">
+    <table id="grid"></table>
+</div>
+<div style="height: 300px;">
+<canvas id="myChart"height=100 style="display: none; height:100px;"></canvas>
+</div>
+<script>
+     var dates = '[\"2021-10-06\",\"2021-10-05\",\"2021-10-04\",\"2021-10-01\",\"2021-09-30\",\"2021-09-29\",\"2021-09-28\",\"2021-09-27\",\"2021-09-24\",\"2021-09-23\",\"2021-09-22\",\"2021-09-21\",\"2021-09-20\",\"2021-09-17\",\"2021-09-16\",\"2021-09-15\",\"2021-09-14\",\"2021-09-13\",\"2021-09-09\",\"2021-09-08\",\"2021-09-07\",\"2021-09-06\",\"2021-09-03\",\"2021-09-02\",\"2021-09-01\",\"2021-08-31\",\"2021-08-30\",\"2021-08-27\",\"2021-08-26\",\"2021-08-25\",\"2021-08-24\",\"2021-08-23\",\"2021-08-20\",\"2021-08-18\",\"2021-08-17\",\"2021-08-16\",\"2021-08-13\",\"2021-08-12\",\"2021-08-11\",\"2021-08-10\",\"2021-08-09\",\"2021-08-06\",\"2021-08-05\",\"2021-08-04\",\"2021-08-03\",\"2021-08-02\",\"2021-07-30\",\"2021-07-29\",\"2021-07-28\",\"2021-07-27\"]';
+    var closed1 = [4463.35,4166.1,4008.9,3793.6,3798.5,3770.15,3865.6,3834.9,3689.25,3694.05,3671.300049,3624.550049,3707.899902,3863.399902,3769.699951,3682.25,3738.449951,3435.75,3295,3296.399902,3286.899902,3008.399902,2869.899902,2829.949951,2746.25,2752,2697.75,2648.699951,2621.699951,2636.5,2564.800049,2554.100098,2646.300049,2719.050049,2669.600098,2629.600098,2660.699951,2689.800049,2572.25,2639.600098,2648.199951,2487.600098,2472.899902,2491.149902,2467.850098,2468.899902,2331.300049,2321.100098,2283.649902,2295.550049]
+    var label = "IRCTC";
+    var graphType = "line";
+    var availableTags= ["IRCTC", "INFOSYS", "RELIANCE", "M&M", "IEX","ANGELBRKG", "CONCOR","INFY", "LT", "MARICO","WIPRO","SUNPHARMA","XCHANGING","CYIENT","APOLLOTYRE","SUNTV"]
+    $( "#tags" ).autocomplete({
+      source: availableTags
+    });
+function getTableData(){
+    
+}
+
+var mySavedData = [];
+mydata = []
+function arrayToTable(t) {
+    if(t){
+        var item = t.value;
+        mySavedData = [];
+    }else{
+        var item = "IRCTC";
+    }
+
+    var colNames = ["Date", "Open", "High"];
+        var colModel = [{
+            name: 'date',
+            index: 'date',
+            editable: false,
+            label:"Date",
+        }, {
+            name: 'open',
+            index: 'open',
+            label:"Open"
+            
+        }, {
+            name: 'high',
+            index: 'high',
+            label:"High"
+        },{
+            name: 'low',
+            index: 'low',
+            label:"Low"
+        },
+        {
+            name: 'close',
+            index: 'close',
+            label:"Close"
+        },{
+            name: 'change',
+            index: 'change',
+            label:"Change"
+        },{
+            name: 'volume',
+            index: 'volume',
+            label:"Volume"
+        }];
+    if(mySavedData.length){
+        var nus = $("#grid").jqGrid('getGridParam', 'reccount');
+        if(nus!=null){
+            if($("#View").val()=="Graph View"){
+                selectView();
+            }
+            else{
+            $('#grid').jqGrid("clearGridData");
+            jQuery("#grid")
+                .jqGrid('setGridParam', {
+                    datatype: 'local',
+                    data: mySavedData
+                })
+                .trigger("reloadGrid");
+            }
+        }
+        else{
+            if($("#View").val()=="Graph View"){
+                selectView();
+            }
+            else{
+                createGrid("grid",colModel,mySavedData,10)
+            }
+        }
+        
+    }
+
+    else{
+        $.get("https://fmpcloud.io/api/v3/historical-price-full/"+item+".ns?timeseries=50&apikey=4ef1390d729be219d77d5deadffd21dc").done(function (data) {
+            //$.get("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050").done(function (data) {
+            mydata = data.historical;
+            mySavedData = mydata;
+            var col = [];
+            var nus = $("#grid").jqGrid('getGridParam', 'reccount');
+            if(nus!=null){
+                if($("#View").val()=="Graph View"){
+                selectView();
+            }
+            else{
+             
+                $('#grid').jqGrid("clearGridData");
+                jQuery("#grid")
+                    .jqGrid('setGridParam', {
+                        datatype: 'local',
+                        data: mySavedData
+                    })
+                    .trigger("reloadGrid");
+                }
+            }
+            else{
+                if($("#View").val()=="Graph View"){
+                    selectView();
+                }
+                else{
+                    createGrid("grid",colModel,mySavedData,10)
+                }
+            }
+        })
+    }    
+}
+
+arrayToTable()
+
+
+
+function createGrid(div, cols, data, no_items){
+	var number_per_pages = no_items?no_items:5;
+	$("#"+div).jqGrid({
+        colModel: cols,
+        data: data,
+        iconSet: "fontAwesome",
+        idPrefix: "g5_",
+        rownumbers: false,
+        sortname: "invdate",
+        sortorder: "desc",
+        threeStateSort: false,
+        sortIconsBeforeText: true,
+        headertitles: true,
+        toppager: false,
+        loadonce: false,
+        pager: true,
+        rowNum: number_per_pages,
+        hidegrid: false,
+        viewrecords: true,
+        shrinkToFit: false,
+        autowidth: false,
+        autosearch: true,
+        searchOnEnter: false,
+        loadComplete: setWidth,
+        searching: {
+            defaultSearch: "cn"
+        },
+        
+        cmTemplate: {
+            firstsortorder: "desc"
+        },
+		gridComplete: function () {
+			
+		},
+        onSortCol: function(index, idxcol, sortorder) {
+            if (this.p.lastsort >= 0 && this.p.lastsort !== idxcol &&
+                this.p.colModel[this.p.lastsort].sortable !== false) {
+                // show the icons of last sorted column
+                $(this.grid.headers[this.p.lastsort].el)
+                    .find(">div.ui-jqgrid-sortable>span.s-ico").show();
+                    
+            }
+            showSortIcons(div);
+        }
+        //caption: caption
+    }).jqGrid("filterToolbar", {
+        searchOnEnter: false,
+        afterSearch: function () {
+        	pageChange();
+        }
+    })
+
+    showSortIcons(div);
+}
+
+function showSortIcons(div) {
+    var colModel = $("#" + div).jqGrid('getGridParam', 'colModel');
+    $('#gbox_' + $.jgrid.jqID(div) +
+        ' tr.ui-jqgrid-labels th.ui-th-column').each(function(i) {
+        var cmi = colModel[i],
+            colName = cmi.name;
+
+        if (cmi.sortable !== false) {
+            
+            // show the sorting icons
+            $(this).find('>div.ui-jqgrid-sortable>span.s-ico').show();
+        } else if (!cmi.sortable && colName !== 'rn' && colName !== 'cb' && colName !== 'subgrid') {
+            // change the mouse cursor on the columns which are non-sortable
+            $(this).find('>div.ui-jqgrid-sortable').css({
+                cursor: 'default'
+            });
+        }
+    });
+}
+
+
+function setWidth(){
+
+}
+
+function ChangeGraphType(){
+    graphType=$("#GraphType").val();
+    selectView();
+}
+
+function ChangeGraphTypeWith(){
+    selectView();
+}
+
+function selectView(t){
+    debugger;
+    selectedOpt = $("#View").val();
+    if(selectedOpt == "Graph View"){
+        $(".grid-sec").hide();
+        $("#myChart").show();
+        $(".g-type").show();
+        $(".c-type").show();
+        showGraph();
+    }
+    else{
+        $(".grid-sec").show();
+        $("#myChart").hide();
+        $(".g-type").hide();
+        $(".c-type").hide();
+        arrayToTable()
+    }
+
+}
+var myScatter;
+function showGraph(){
+    var dates1 = mySavedData.map(function(val){
+        return val.date
+    })
+    var param = $("#GraphTypeBase").val().toLowerCase();
+    var closedData = mySavedData.map(function(val){
+        return val[param]
+    })
+    if(myScatter)
+        myScatter.destroy();
+    myScatter = new Chart(document.getElementById("myChart"), {
+    type: 'bar',
+    data: {
+      //labels: ["1900", "1950", "1999", "2050"],
+      labels:dates1,
+      datasets: [{
+          label: $("#tags").val()?$("#tags").val():"IRCTC",
+          type: graphType,
+          borderColor: "black",
+          backgroundColor: "rgba(200,0,0,0.8)",
+          //data: [408.44,547.88,675,734],
+         data:closedData,
+          fill: false
+        }
+        /*, {
+          label: "Africa",
+          type: "line",
+          borderColor: "#3e95cd",
+          data: [133,221,783,2478],
+          fill: false
+        }, {
+          label: "Europe",
+          type: "bar",
+          backgroundColor: "rgba(0,0,0,0.2)",
+          data: [408,547,675,734],
+        }, {
+          label: "Africa",
+          type: "bar",
+          backgroundColor: "rgba(0,0,0,0.2)",
+          backgroundColorHover: "#3e95cd",
+          data: [133,221,783,2478]
+        }*/
+      ]
+    },
+    options: {
+      title: {
+        display: true,
+        text: 'Chart View'
+      },
+      legend: { display: false }
+    }
+});
+}
+</script>
+
